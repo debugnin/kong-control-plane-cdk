@@ -1,0 +1,26 @@
+{
+    "name": "kong-control-plane-cdk",
+    "version": "1.0.0",
+    "description": "AWS CDK project that deploys a self-hosted Kong Gateway Enterprise control plane on ECS Fargate with Aurora Serverless v2 (PostgreSQL) and AWS Backup",
+    "bin": {
+        "kong-control-plane-cdk": "bin/kong-cp-cdk.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w",
+        "test": "jest",
+        "cdk": "cdk"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.14",
+        "@types/node": "^22.7.9",
+        "jest": "^29.7.0",
+        "ts-jest": "^29.2.5",
+        "ts-node": "^10.9.2",
+        "typescript": "~5.6.3"
+    },
+    "dependencies": {
+        "aws-cdk-lib": "^2.250.0",
+        "constructs": "^10.0.0"
+    }
+}

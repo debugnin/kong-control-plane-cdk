@@ -1,0 +1,49 @@
+{
+    "environment": "dev",
+
+    "kongImageUri": "kong/kong-gateway:3.15",
+    "kongLicenseSecretArn": "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:kong/cp/dev/license-AbCdEf",
+    "clusterCertSecretArn": "arn:aws:secretsmanager:ap-southeast-2:123456789012:secret:kong/cp/dev/cluster-cert-AbCdEf",
+
+    "cpCpu": "1024",
+    "cpMemory": "2048",
+    "cpReplicas": "2",
+    "cpLogLevel": "notice",
+    "dataPlaneCidrs": "10.20.0.0/16",
+    "clusterDomain": "kong-cluster.dev.example.com",
+
+    "vpcCidr": "10.0.0.0/16",
+    "vpcMaxAzs": "2",
+    "vpcNatGateways": "1",
+    "vpcEnableFlowLogs": "true",
+    "vpcEnableEndpoints": "true",
+    "transitGatewayId": "",
+    "transitGatewayRoutes": "",
+
+    "dbEngineVersion": "16.13",
+    "dbMinCapacityAcu": "0.5",
+    "dbMaxCapacityAcu": "4",
+    "dbReaderCount": "1",
+    "dbBackupRetentionDays": "14",
+    "dbDeletionProtection": "true",
+
+    "backupEnabled": "true",
+    "backupDailyRetentionDays": "35",
+    "backupWeeklyRetentionDays": "0",
+    "backupMonthlyRetentionDays": "0",
+    "backupStartHourUtc": "16",
+    "backupCopyToVaultArn": "",
+
+    "albDomain": "kong.dev.example.com",
+    "albHostedZoneId": "Z1234567890ABC",
+    "albHostedZoneName": "dev.example.com",
+    "albAllowedCidrs": "10.0.0.0/16,10.20.0.0/16",
+    "albInternetFacing": "false",
+    "albEnableAccessLogs": "true",
+
+    "wafEnabled": "true",
+    "wafRateLimit": "2000",
+    "wafEnableCidrRestriction": "false",
+
+    "loggingEnabled": "false"
+}
