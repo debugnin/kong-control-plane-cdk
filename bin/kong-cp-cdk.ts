@@ -127,10 +127,8 @@ const databaseStack = new KongDatabaseStack(
         },
         backup: {
             enabled: bool('backupEnabled', 'BACKUP_ENABLED', true),
-            dailyRetentionDays: num(
-                'backupDailyRetentionDays',
-                'BACKUP_DAILY_RETENTION_DAYS'
-            ),
+            intervalHours: num('backupIntervalHours', 'BACKUP_INTERVAL_HOURS'),
+            retentionDays: num('backupRetentionDays', 'BACKUP_RETENTION_DAYS'),
             weeklyRetentionDays: num(
                 'backupWeeklyRetentionDays',
                 'BACKUP_WEEKLY_RETENTION_DAYS'

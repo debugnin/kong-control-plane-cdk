@@ -23,7 +23,8 @@ export interface KongDatabaseStackProps extends cdk.StackProps {
 
     backup?: {
         enabled?: boolean;
-        dailyRetentionDays?: number;
+        intervalHours?: number;
+        retentionDays?: number;
         weeklyRetentionDays?: number;
         monthlyRetentionDays?: number;
         startHourUtc?: number;

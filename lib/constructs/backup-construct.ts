@@ -9,14 +9,16 @@ export interface BackupConstructProps {
     environment: string; // Environment: dev, qa, uat, prd
     cluster: rds.IDatabaseCluster;
 
-    /** Daily backup retention in days. Always enabled. */
-    dailyRetentionDays?: number;
+    /** How often the primary backup rule runs, in hours. Must divide 24 (1, 2, 3, 4, 6, 8, 12, 24). */
+    intervalHours?: number;
+    /** Retention in days for the primary (every `intervalHours`) rule. Always enabled. */
+    retentionDays?: number;
     /** Weekly backup retention in days. 0 disables the weekly rule. */
     weeklyRetentionDays?: number;
     /** Monthly backup retention in days. 0 disables the monthly rule. */
     monthlyRetentionDays?: number;
 
-    /** Hour (0-23, UTC) the daily backup job starts. */
+    /** Hour (0-23, UTC) the schedules are anchored to (the interval repeats from this hour). */
     startHourUtc?: number;
 
     /**
@@ -29,7 +31,7 @@ export interface BackupConstructProps {
 
 /**
  * AWS Backup for the Aurora cluster: a KMS-encrypted vault, a backup plan with
- * daily (and optional weekly/monthly) rules, and a selection that targets the cluster.
+ * a frequent rule (every 4 hours by default) plus optional weekly/monthly rules, and a selection that targets the cluster.
  */
 export class BackupConstruct extends Construct {
     public readonly vault: backup.BackupVault;
@@ -41,12 +43,23 @@ export class BackupConstruct extends Construct {
         const {
             environment,
             cluster,
-            dailyRetentionDays = 35,
+            intervalHours = 4,
+            retentionDays = 35,
             weeklyRetentionDays = 0,
             monthlyRetentionDays = 0,
             startHourUtc = 16, // 00:00 AWST (Perth)
             copyToVaultArn,
         } = props;
+
+        if (
+            !Number.isInteger(intervalHours) ||
+            intervalHours < 1 ||
+            24 % intervalHours !== 0
+        ) {
+            throw new Error(
+                `backupIntervalHours must divide 24 evenly (1, 2, 3, 4, 6, 8, 12 or 24), got ${intervalHours}`
+            );
+        }
 
         const key = new kms.Key(this, 'VaultKey', {
             alias: `alias/kong-cp-backup-${environment}`,
@@ -84,17 +97,21 @@ export class BackupConstruct extends Construct {
 
         this.plan.addRule(
             new backup.BackupPlanRule({
-                ruleName: 'Daily',
+                ruleName: 'Frequent',
+                // e.g. every 4 hours anchored to startHourUtc 16 -> 0,4,8,12,16,20 UTC
                 scheduleExpression: events.Schedule.cron({
                     minute: '0',
-                    hour: String(startHourUtc),
+                    hour:
+                        intervalHours === 24
+                            ? String(startHourUtc)
+                            : `${startHourUtc % intervalHours}/${intervalHours}`,
                 }),
                 startWindow,
                 completionWindow,
-                deleteAfter: cdk.Duration.days(dailyRetentionDays),
+                deleteAfter: cdk.Duration.days(retentionDays),
                 copyActions: copyAction?.map((a) => ({
                     ...a,
-                    deleteAfter: cdk.Duration.days(dailyRetentionDays),
+                    deleteAfter: cdk.Duration.days(retentionDays),
                 })),
             })
         );

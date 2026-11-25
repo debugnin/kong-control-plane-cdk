@@ -10,7 +10,7 @@ A Kong Professional Services **reference implementation** that automates a self-
 |---|---|
 | **Control plane** | Kong Gateway Enterprise as `control_plane` with no proxy listener, run as a multi-task service spread across availability zones. Rolling deployments with automatic rollback on failure. |
 | **Database** | Aurora Serverless v2 (PostgreSQL), writer plus a reader for failover, capacity range configurable (default 0.5–4 ACU), encrypted with a dedicated KMS key (rotation on), private subnets only. |
-| **Automated backup** | AWS Backup vault and plan: daily backups (35 days by default), optional weekly and monthly rules, optional copy to another region or account, KMS-encrypted vault. Aurora point-in-time recovery (14 days) runs alongside. |
+| **Automated backup** | AWS Backup vault and plan: backups every 4 hours (35 days by default), optional weekly and monthly rules, optional copy to another region or account, KMS-encrypted vault. Aurora point-in-time recovery (14 days) runs alongside. |
 | **Restore** | A single setting (`dbSnapshotIdentifier`) rebuilds the database from a snapshot or AWS Backup recovery point. Runbook in [BACKUP_AND_RECOVERY.md](BACKUP_AND_RECOVERY.md). |
 | **Schema management** | `kong migrations bootstrap` runs automatically before the control plane starts (idempotent). Version upgrades are a deliberate, documented manual step. |
 | **Secure by default** | Internal load balancers only; security groups limited to configured CIDRs; RBAC enforced and Kong Manager basic-auth on; admin and session secrets generated into Secrets Manager; the Aurora TLS certificate is verified against the RDS CA. |
@@ -28,7 +28,7 @@ A Kong Professional Services **reference implementation** that automates a self-
                                                                     ▼
                                             Aurora Serverless v2 PostgreSQL (writer + reader)
                                                                     ▲
-                                            AWS Backup vault + plan (daily / weekly / monthly)
+                                            AWS Backup vault + plan (every 4 h / weekly / monthly)
 ```
 
 ## What carries over to other environments

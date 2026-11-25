@@ -52,7 +52,7 @@ Helpers `str/num/bool/list/required` in `bin/kong-cp-cdk.ts` read keys; add new 
 - **Aurora TLS is verified.** Kong's global `tls_certificate_verify` rejects `KONG_PG_SSL_VERIFY=off`; the regional RDS CA bundle (`certs/rds-ca-{region}.pem`, `scripts/fetch-rds-ca.sh`) is passed as base64 content in `KONG_LUA_SSL_TRUSTED_CERTIFICATE`. ECS `run-task` container overrides are capped at 8 KB, so test changes to this variable on one container only.
 - **Cluster mTLS** is `shared` mode; cert/key come from a user-supplied secret (`scripts/create-cp-secrets.sh`).
 - **Internal by default:** ALB and NLB are internal; `albInternetFacing` exists but should stay `false`.
-- **Backup:** AWS Backup daily rule always on; weekly/monthly are opt-in (`0` disables); optional cross-region copy via `backupCopyToVaultArn`. Restore via `dbSnapshotIdentifier` (replaces the cluster on an existing stack).
+- **Backup:** AWS Backup primary rule always on, every 4 hours by default (`backupIntervalHours`, must divide 24; `backupRetentionDays`); weekly/monthly are opt-in (`0` disables); optional cross-region copy via `backupCopyToVaultArn`. Restore via `dbSnapshotIdentifier` (replaces the cluster on an existing stack).
 - **Aurora min capacity is 0.5 ACU** (not scale-to-zero): Kong keeps persistent connections.
 - **One environment per account/region** - resource names are fixed per `environment` (see docs/NAMING_CONVENTIONS.md).
 

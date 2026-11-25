@@ -28,7 +28,8 @@
     "dbDeletionProtection": "true",
 
     "backupEnabled": "true",
-    "backupDailyRetentionDays": "35",
+    "backupIntervalHours": "4",
+    "backupRetentionDays": "35",
     "backupWeeklyRetentionDays": "0",
     "backupMonthlyRetentionDays": "0",
     "backupStartHourUtc": "16",

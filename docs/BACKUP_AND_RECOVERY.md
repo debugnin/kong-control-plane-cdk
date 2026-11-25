@@ -7,7 +7,7 @@ The Aurora PostgreSQL database holds all Kong configuration (services, routes, p
 | Layer | Mechanism | Default | Recovery |
 |---|---|---|---|
 | Aurora native backups | Continuous, point-in-time recovery | 14 days (`dbBackupRetentionDays`) | Any second in the window → new cluster |
-| **AWS Backup** | Scheduled snapshots in `kong-cp-backup-vault-{env}` | Daily, 35 days | Snapshot → new cluster |
+| **AWS Backup** | Scheduled snapshots in `kong-cp-backup-vault-{env}` | Every 4 hours, 35 days | Snapshot → new cluster |
 | AWS Backup (optional) | Weekly / monthly rules | Off | Longer retention |
 | AWS Backup (optional) | Copy to a vault in another region/account | Off | Regional DR |
 | Final snapshot | Taken if the cluster is deleted from CloudFormation | On (`RemovalPolicy.SNAPSHOT`) | Snapshot → new cluster |
@@ -19,7 +19,8 @@ Not covered by AWS Backup: the Secrets Manager secrets (license, cluster certifi
 ```json
 {
     "backupEnabled": "true",
-    "backupDailyRetentionDays": "35",
+    "backupIntervalHours": "4",
+    "backupRetentionDays": "35",
     "backupWeeklyRetentionDays": "90",
     "backupMonthlyRetentionDays": "365",
     "backupStartHourUtc": "16",
@@ -27,7 +28,8 @@ Not covered by AWS Backup: the Secrets Manager secrets (license, cluster certifi
 }
 ```
 
-- Schedule: daily at `backupStartHourUtc`:00 UTC (default 16 = midnight Perth); weekly on Sundays; monthly on the 1st. Start window 1 hour, completion window 4 hours.
+- Schedule: the primary rule (`Frequent`) runs every `backupIntervalHours` (default 4) from the anchor hour `backupStartHourUtc` (default 16 UTC = midnight Perth), i.e. 00, 04, 08, 12, 16, 20 UTC. The interval must divide 24. Weekly rules run Sundays and monthly rules on the 1st. Start window 1 hour, completion window 4 hours.
+- Retention applies to every recovery point of the primary rule: at the defaults that is up to about 210 recovery points. Aurora snapshots are incremental, but lower `backupRetentionDays` (for example to 7) and rely on the weekly/monthly rules for long-term copies if cost matters.
 - The vault and its KMS key are **retained** on stack deletion; CloudFormation cannot delete a vault that holds recovery points.
 - The plan selects the cluster by ARN, so resizing or adding readers does not change protection.
 - Cross-region/account copy: create the destination vault first (and allow the source account in its access policy). The plan copies each recovery point with the same retention as the source rule. If the destination vault uses a customer-managed KMS key, that key policy must allow AWS Backup.
@@ -90,7 +92,7 @@ aws rds create-db-instance --db-cluster-identifier kong-cp-db-dev-restored \
 |---|---|---|
 | Bad config pushed | Restore PITR copy, export the config, re-apply | Seconds |
 | AZ failure | Aurora failover to the reader (needs `dbReaderCount >= 1`); ECS tasks reschedule | None / seconds |
-| Database lost | Path A from the latest recovery point | Up to 24 h with the default daily rule |
-| Region failure | Path A from a cross-region copy (`backupCopyToVaultArn`) | Up to 24 h |
+| Database lost | Path A from the latest recovery point | Up to 4 h with the default schedule |
+| Region failure | Path A from a cross-region copy (`backupCopyToVaultArn`) | Up to 4 h (plus copy lag) |
 
 Practise a restore into a throwaway environment at least once per quarter; an untested backup is not a backup.

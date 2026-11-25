@@ -69,14 +69,15 @@ describe('Aurora Serverless v2', () => {
 });
 
 describe('AWS Backup', () => {
-    test('plan with daily rule, vault and Aurora selection', () => {
+    test('plan with a rule every 4 hours, vault and Aurora selection', () => {
         const { db } = build();
         db.resourceCountIs('AWS::Backup::BackupVault', 1);
         db.hasResourceProperties('AWS::Backup::BackupPlan', {
             BackupPlan: {
                 BackupPlanRule: [
                     Match.objectLike({
-                        RuleName: 'Daily',
+                        RuleName: 'Frequent',
+                        ScheduleExpression: 'cron(0 0/4 * * ? *)',
                         Lifecycle: Match.objectLike({ DeleteAfterDays: 35 }),
                     }),
                 ],
@@ -95,7 +96,19 @@ describe('AWS Backup', () => {
         const names = plan.Properties.BackupPlan.BackupPlanRule.map(
             (r: any) => r.RuleName
         );
-        expect(names).toEqual(['Daily', 'Weekly', 'Monthly']);
+        expect(names).toEqual(['Frequent', 'Weekly', 'Monthly']);
+    });
+
+    test('interval is configurable and validated', () => {
+        const { db } = build({ backup: { intervalHours: 6, startHourUtc: 16 } });
+        db.hasResourceProperties('AWS::Backup::BackupPlan', {
+            BackupPlan: {
+                BackupPlanRule: [
+                    Match.objectLike({ ScheduleExpression: 'cron(0 4/6 * * ? *)' }),
+                ],
+            },
+        });
+        expect(() => build({ backup: { intervalHours: 5 } })).toThrow(/divide 24/);
     });
 
     test('can be disabled', () => {

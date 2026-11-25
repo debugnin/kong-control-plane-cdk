@@ -4,7 +4,7 @@ AWS CDK (TypeScript) project that automates a **self-hosted Kong Gateway Enterpr
 
 - **ECS Fargate** runs the Kong control plane (`role=control_plane`, no proxy listener)
 - **Aurora Serverless v2 (PostgreSQL)** is the Kong database
-- **AWS Backup** protects the database (daily backups by default, optional weekly/monthly and cross-region copy)
+- **AWS Backup** protects the database (backups every 4 hours by default, optional weekly/monthly and cross-region copy)
 - **Internal ALB** serves Kong Manager and the Admin API; **internal NLB** serves the data plane cluster/telemetry ports
 - Optional WAF, VPC Flow Logs, Transit Gateway attachment and central CloudWatch log forwarding
 
@@ -110,10 +110,11 @@ Precedence (highest first): `config/{environment}.json` → `cdk.context.json` /
 | Config key | Default | Description |
 |---|---|---|
 | `backupEnabled` | `true` | Create the vault, plan and Aurora selection |
-| `backupDailyRetentionDays` | `35` | Daily rule retention |
+| `backupIntervalHours` | `4` | How often the primary rule runs; must divide 24 (1, 2, 3, 4, 6, 8, 12, 24) |
+| `backupRetentionDays` | `35` | Retention of the primary rule's recovery points |
 | `backupWeeklyRetentionDays` | `0` (off) | Weekly rule (Sundays); `0` disables |
 | `backupMonthlyRetentionDays` | `0` (off) | Monthly rule (1st of month); `0` disables |
-| `backupStartHourUtc` | `16` | Job start hour, UTC (`16` = 00:00 AWST) |
+| `backupStartHourUtc` | `16` | Anchor hour, UTC (`16` = 00:00 AWST); the interval repeats from it (4h -> 00, 04, 08, 12, 16, 20 UTC) |
 | `backupCopyToVaultArn` | – | Existing vault (other region/account) to copy every recovery point to |
 
 ### Network, ALB, WAF, logging
