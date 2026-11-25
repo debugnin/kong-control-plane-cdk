@@ -85,7 +85,8 @@ export class AlbConstruct extends Construct {
             vpc,
             internetFacing,
             securityGroup: this.securityGroup,
-            loadBalancerName: `kong-cp-alb-${environment}`,
+            // No fixed name: changing internetFacing replaces the ALB, and a replacement cannot
+            // be created while the old one still holds the same name.
             vpcSubnets: {
                 subnetType: internetFacing
                     ? ec2.SubnetType.PUBLIC

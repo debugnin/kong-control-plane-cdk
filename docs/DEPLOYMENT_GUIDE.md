@@ -82,9 +82,21 @@ curl -s -H "Kong-Admin-Token: <password>" "$(aws cloudformation describe-stacks 
 | Aurora capacity range, reader count, retention | Edit config → `npx cdk deploy kong-cp-database-stack-{env}` |
 | Backup schedule/retention | Edit config → `npx cdk deploy kong-cp-database-stack-{env}` |
 | Admin/CP access CIDRs | Edit `albAllowedCidrs` / `dataPlaneCidrs` → deploy service stack |
+| **Switch the ALB between internal and internet-facing** (`albInternetFacing`) | **Requires recreating the service stack** - see below |
 | Rotate cluster certificate | Update the secret, update all data planes, then force a new deployment: `aws ecs update-service --cluster kong-cp-ecscluster-{env} --service kong-cp-ecsservice-{env} --force-new-deployment` |
 
 Changing `dbEngineVersion` triggers an Aurora engine upgrade; review `cdk diff` and test against a snapshot restore first.
+
+## Switching the ALB between internal and internet-facing
+
+An ALB's scheme cannot be changed in place, and an in-place update fails because the replacement ALB's listeners need target groups that the old ALB still holds (a target group can belong to only one load balancer). Recreate the service stack instead; the database stack, backups and secrets are not affected:
+
+1. Set `albInternetFacing` and `albAllowedCidrs` (for example your public IP as a `/32`) in `config/{env}.json`. An internet-facing ALB with the default VPC CIDR is public but unreachable.
+2. `npx cdk destroy kong-cp-service-stack-{env}`
+3. `npx cdk deploy --all` - always `--all` (never `--exclusively`): the network stack must publish the public subnet exports first.
+4. Delete the retained WAF log and ALB access-log buckets from the old stack.
+
+Expect 15-20 minutes without Manager or the Admin API, a new NLB hostname (update any data planes that use the old one), and a new ACM certificate. Keep the ALB internal for anything beyond development and reach it over a VPN or Transit Gateway.
 
 ## Upgrading Kong
 
