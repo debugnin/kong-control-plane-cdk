@@ -8,11 +8,11 @@
 | `/aws/vpc/kong-vpc-flowlogs-{env}` | VPC Flow Logs | 1 month |
 | `/aws/rds/cluster/kong-cp-db-{env}/postgresql` | Aurora PostgreSQL log | 1 month |
 | S3 (ALB access logs bucket) | ALB access logs | 30 days |
-| S3 `aws-waf-logs-kong-cp-alb-{env}-{account}` | WAF logs | 30 days |
+| S3 `aws-waf-logs-kong-cp-alb-{env}-{stack id suffix}` | WAF logs (bucket is retained on stack deletion) | 30 days |
 
 Kong writes the Admin API access log to stdout (`KONG_ADMIN_ACCESS_LOG=/dev/stdout`) and errors to stderr. Verbosity is `cpLogLevel` (default `notice`). Log level changes need a service redeploy.
 
-The control plane log group is retained when the stack is deleted.
+The control plane log group is deleted with the service stack (so a redeploy never collides with a leftover group). Forward logs centrally (below) if you need them to outlive the stack.
 
 ## Forwarding to a central account
 

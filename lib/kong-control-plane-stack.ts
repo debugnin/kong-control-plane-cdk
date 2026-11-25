@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
@@ -30,6 +31,8 @@ export interface KongControlPlaneStackProps extends cdk.StackProps {
         cluster: rds.DatabaseClusterBase;
         securityGroup: ec2.ISecurityGroup;
         databaseName: string;
+        /** PEM bundle of the RDS CA(s) used to verify the Aurora server certificate. */
+        caBundlePem: string;
         /** KMS key encrypting the Aurora master secret. */
         encryptionKey: kms.IKey;
         adminSecret: secretsmanager.ISecret;
@@ -198,7 +201,8 @@ export class KongControlPlaneStack extends cdk.Stack {
         const logGroup = new logs.LogGroup(this, 'LogGroup', {
             logGroupName: `/aws/ecs/kong-cp-logs-${environment}`,
             retention: controlPlane.logRetentionDays ?? logs.RetentionDays.ONE_MONTH,
-            removalPolicy: cdk.RemovalPolicy.RETAIN,
+            // A retained fixed-name log group would block redeploying the stack after a teardown.
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
         const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
@@ -228,6 +232,16 @@ export class KongControlPlaneStack extends cdk.Stack {
             ),
         });
 
+        // CDK does not add the KMS grant for an imported key, so the execution role could not
+        // decrypt the Aurora master secret (AccessDeniedException: Access to KMS is not allowed).
+        // The key policy delegates to IAM, so an identity policy is sufficient.
+        taskDefinition.obtainExecutionRole().addToPrincipalPolicy(
+            new iam.PolicyStatement({
+                actions: ['kms:Decrypt'],
+                resources: [database.encryptionKey.keyArn],
+            })
+        );
+
         const image = ecs.ContainerImage.fromRegistry(controlPlane.imageUri);
 
         const sharedEnvironment: Record<string, string> = {
@@ -236,6 +250,11 @@ export class KongControlPlaneStack extends cdk.Stack {
             KONG_PG_PORT: String(database.cluster.clusterEndpoint.port),
             KONG_PG_DATABASE: database.databaseName,
             KONG_PG_SSL: 'on',
+            // Kong verifies the Aurora certificate (its global tls_certificate_verify cannot be
+            // overridden per connection). The RDS CA is not in the image's trust store, so it is
+            // passed as base64 certificate content alongside the system store.
+            KONG_PG_SSL_VERIFY: 'on',
+            KONG_LUA_SSL_TRUSTED_CERTIFICATE: `system,${Buffer.from(database.caBundlePem).toString('base64')}`,
         };
         const sharedSecrets: Record<string, ecs.Secret> = {
             KONG_PG_USER: ecs.Secret.fromSecretsManager(dbSecret, 'username'),

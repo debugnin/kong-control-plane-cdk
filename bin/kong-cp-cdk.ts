@@ -159,6 +159,22 @@ const controlPlaneStack = new KongControlPlaneStack(
             cluster: databaseStack.aurora.cluster,
             securityGroup: databaseStack.aurora.securityGroup,
             databaseName: databaseStack.aurora.databaseName,
+            caBundlePem: (() => {
+                const region = env.region ?? process.env.AWS_REGION ?? 'ap-southeast-2';
+                const caPath = path.join(
+                    __dirname,
+                    '..',
+                    str('dbCaBundlePath', 'DB_CA_BUNDLE_PATH') ??
+                        `certs/rds-ca-${region}.pem`
+                );
+                if (!fs.existsSync(caPath)) {
+                    throw new Error(
+                        `RDS CA bundle not found at ${caPath}. Run ./scripts/fetch-rds-ca.sh ${region} ` +
+                            `or set dbCaBundlePath / DB_CA_BUNDLE_PATH.`
+                    );
+                }
+                return fs.readFileSync(caPath, 'utf8');
+            })(),
             encryptionKey: databaseStack.aurora.encryptionKey,
             adminSecret: databaseStack.adminSecret,
             sessionSecret: databaseStack.sessionSecret,

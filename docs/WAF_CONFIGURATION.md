@@ -10,7 +10,7 @@ An AWS WAFv2 web ACL (`kong-cp-alb-waf-{env}`) is associated with the control pl
 4. **AWSManagedRulesAmazonIpReputationList**
 5. **RateLimitRule** – blocks (429) any single IP above `wafRateLimit` requests per 5-minute window (AWS evaluation window; default 2000).
 
-The default action is **allow** unless CIDR restriction is active. WAF logs go to an S3 bucket `aws-waf-logs-kong-cp-alb-{env}-{account}` (30-day expiry).
+The default action is **allow** unless CIDR restriction is active. WAF logs go to an S3 bucket `aws-waf-logs-kong-cp-alb-{env}-{stack id suffix}` (retained on stack deletion) (30-day expiry).
 
 ## Settings
 

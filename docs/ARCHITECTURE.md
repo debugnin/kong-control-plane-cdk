@@ -36,7 +36,7 @@
 - `dbReaderCount=1` places a reader in another AZ for failover; readers use `scaleWithWriter`. Kong is configured against the **writer endpoint only** (no read-replica routing).
 - Aurora native automated backups (`dbBackupRetentionDays`, default 14) give point-in-time recovery; AWS Backup adds scheduled, longer-retention, optionally cross-region recovery points. See [BACKUP_AND_RECOVERY.md](BACKUP_AND_RECOVERY.md).
 - Aurora cluster logs (`postgresql`) are exported to CloudWatch.
-- `KONG_PG_SSL=on` encrypts the connection; the Aurora server certificate is not verified (`KONG_PG_SSL_VERIFY` is unset). To verify, bake the RDS CA bundle into the image and set `KONG_LUA_SSL_TRUSTED_CERTIFICATE` / `KONG_PG_SSL_VERIFY=on`.
+- Kong **verifies the Aurora server certificate** (`KONG_PG_SSL=on`, `KONG_PG_SSL_VERIFY=on`). Recent Kong versions enforce a global TLS-verification setting that cannot be overridden per connection, so turning verification off fails with `detected attempt to disable certificate verification`. The Amazon RDS CA is not in the Kong image's trust store, so the regional RDS CA bundle (`certs/rds-ca-{region}.pem`, fetched with `scripts/fetch-rds-ca.sh`) is embedded at synth time and passed as `KONG_LUA_SSL_TRUSTED_CERTIFICATE=system,<base64 PEM>`. No custom image is needed. Refresh the bundle when AWS rotates the RDS CA.
 
 ## Connecting data planes
 

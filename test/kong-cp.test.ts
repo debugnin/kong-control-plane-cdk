@@ -25,6 +25,7 @@ function build(opts: { backup?: any; aurora?: any } = {}) {
             cluster: db.aurora.cluster,
             securityGroup: db.aurora.securityGroup,
             databaseName: db.aurora.databaseName,
+            caBundlePem: '-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----\n',
             encryptionKey: db.aurora.encryptionKey,
             adminSecret: db.adminSecret,
             sessionSecret: db.sessionSecret,
@@ -117,6 +118,9 @@ describe('Control plane service', () => {
         expect(env.KONG_ROLE).toBe('control_plane');
         expect(env.KONG_PROXY_LISTEN).toBe('off');
         expect(env.KONG_DATABASE).toBe('postgres');
+        expect(env.KONG_PG_SSL).toBe('on');
+        expect(env.KONG_PG_SSL_VERIFY).toBe('on');
+        expect(env.KONG_LUA_SSL_TRUSTED_CERTIFICATE).toMatch(/^system,[A-Za-z0-9+/=]+$/);
         expect(JSON.stringify(kong.Secrets)).toContain('KONG_LICENSE_DATA');
     });
 
@@ -143,6 +147,16 @@ describe('Control plane service', () => {
         cp.hasResourceProperties('AWS::ElasticLoadBalancingV2::Listener', {
             Port: 8006,
             Protocol: 'TCP',
+        });
+    });
+
+    test('execution role can decrypt the Aurora secret KMS key', () => {
+        cp.hasResourceProperties('AWS::IAM::Policy', {
+            PolicyDocument: {
+                Statement: Match.arrayWith([
+                    Match.objectLike({ Action: 'kms:Decrypt', Effect: 'Allow' }),
+                ]),
+            },
         });
     });
 

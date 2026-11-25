@@ -198,10 +198,16 @@ export class WafConstruct extends Construct {
 
         // WAF Logging
         if (enableLogging) {
+            // WAF requires the `aws-waf-logs-` prefix. The name carries a per-stack suffix and the
+            // bucket is retained: WAF adds its own bucket policy and writes logs immediately, so a
+            // fixed name or auto-delete makes failed deployments impossible to roll back or redeploy.
+            const stackSuffix = cdk.Fn.select(
+                0,
+                cdk.Fn.split('-', cdk.Fn.select(2, cdk.Fn.split('/', cdk.Aws.STACK_ID)))
+            );
             this.logBucket = new s3.Bucket(this, 'WafLogBucket', {
-                bucketName: `aws-waf-logs-kong-${this.component}-${this.environmentName}-${cdk.Aws.ACCOUNT_ID}`,
-                removalPolicy: cdk.RemovalPolicy.DESTROY,
-                autoDeleteObjects: false,
+                bucketName: `aws-waf-logs-kong-${this.component}-${this.environmentName}-${stackSuffix}`,
+                removalPolicy: cdk.RemovalPolicy.RETAIN,
                 encryption: s3.BucketEncryption.S3_MANAGED,
                 blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
                 lifecycleRules: [

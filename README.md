@@ -44,7 +44,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 - AWS CLI v2 with credentials for the target account; account/region [bootstrapped](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html) for CDK
 - A Kong Enterprise **license** (JSON) and a Kong Gateway **image** reachable from the VPC (ECR recommended)
 - An ACM certificate for the ALB, or a Route 53 hosted zone so CDK can request one
-- `openssl` and `jq` (used by `scripts/create-cp-secrets.sh`)
+- `openssl` and `jq` (used by `scripts/create-cp-secrets.sh`), and `curl` (used by `scripts/fetch-rds-ca.sh`)
 
 ## Quick start
 
@@ -54,10 +54,13 @@ npm install
 # 1. Create the license + cluster certificate secrets (prints the ARNs)
 ./scripts/create-cp-secrets.sh dev ./license.json ap-southeast-2
 
-# 2. Configure the environment
+# 2. Fetch the RDS CA bundle Kong uses to verify Aurora (commit certs/ - it is public)
+./scripts/fetch-rds-ca.sh ap-southeast-2
+
+# 3. Configure the environment
 cp config/dev.json.example config/dev.json   # edit: image, secret ARNs, domain, CIDRs
 
-# 3. Deploy
+# 4. Deploy
 ENVIRONMENT=dev npx cdk synth
 ENVIRONMENT=dev npx cdk deploy --all
 ```
@@ -85,6 +88,7 @@ Precedence (highest first): `config/{environment}.json` → `cdk.context.json` /
 | `cpCpu` / `cpMemory` | `1024` / `2048` | Fargate task size |
 | `cpReplicas` | `2` | Number of control plane tasks |
 | `cpLogLevel` | `notice` | `KONG_LOG_LEVEL` |
+| `dbCaBundlePath` | `certs/rds-ca-{region}.pem` | RDS CA bundle (PEM) Kong uses to verify Aurora; create it with `scripts/fetch-rds-ca.sh` |
 | `logRetentionDays` | `30` | CloudWatch retention for control plane logs |
 | `dataPlaneCidrs` | VPC CIDR | CIDRs allowed to reach ports 8005/8006 (add data plane networks) |
 | `clusterDomain` | – | DNS name aliased to the NLB (needs `albHostedZoneId`/`albHostedZoneName`) |
