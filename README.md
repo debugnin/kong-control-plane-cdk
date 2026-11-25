@@ -145,6 +145,7 @@ npx cdk deploy --all   # Deploy network -> database -> service
 
 | Document | Contents |
 |---|---|
+| [docs/OVERVIEW.md](docs/OVERVIEW.md) | One-page summary of key features, status and limits (shareable) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, ports, security model, connecting data planes |
 | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Step-by-step deployment, first login, upgrades, teardown |
 | [docs/BACKUP_AND_RECOVERY.md](docs/BACKUP_AND_RECOVERY.md) | AWS Backup plan, restore and DR runbook |
