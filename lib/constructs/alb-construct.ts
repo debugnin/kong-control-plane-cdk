@@ -109,12 +109,14 @@ export class AlbConstruct extends Construct {
             port: MANAGER_PORT,
             protocol: elbv2.ApplicationProtocol.HTTPS,
             certificates,
+            open: false, // ingress is limited to allowedCidrs above
         });
 
         this.adminListener = this.loadBalancer.addListener('AdminApiListener', {
             port: ADMIN_API_PORT,
             protocol: elbv2.ApplicationProtocol.HTTPS,
             certificates,
+            open: false,
         });
 
         if (customDomain && (hostedZoneId || hostedZoneName)) {

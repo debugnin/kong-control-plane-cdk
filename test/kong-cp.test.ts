@@ -146,6 +146,15 @@ describe('Control plane service', () => {
         });
     });
 
+    test('ALB security group is not open to the world', () => {
+        const groups = Object.values(
+            cp.findResources('AWS::EC2::SecurityGroup')
+        ) as any[];
+        const ingress = groups.flatMap((g) => g.Properties.SecurityGroupIngress ?? []);
+        expect(ingress.length).toBeGreaterThan(0);
+        expect(ingress.filter((r) => r.CidrIp === '0.0.0.0/0')).toEqual([]);
+    });
+
     test('contains no data plane resources', () => {
         const json = JSON.stringify(cp.toJSON());
         expect(json).not.toContain('konnect');
