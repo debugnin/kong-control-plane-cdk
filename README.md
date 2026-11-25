@@ -13,20 +13,9 @@ AWS CDK (TypeScript) project that automates a **self-hosted Kong Gateway Enterpr
 
 ## Architecture
 
-```text
-                       VPC (private subnets, multi-AZ)
+![Kong control plane on AWS: architecture](docs/images/kong_control_plane_aws_architecture.png)
 
- Admins / CI ──443/8444──► ALB (internal, TLS, WAF) ──► ┐
-                                                        │   ECS Fargate service
- Data planes ──8005/8006─► NLB (internal, TCP) ───────► ┤   kong-migrations (init, bootstrap)
- (other VPCs / on-prem)                                 │   kong-cp (role=control_plane)
-                                                        ▼
-                                          Aurora Serverless v2 PostgreSQL
-                                          writer + reader (KMS encrypted)
-                                                        ▲
-                                                        │ snapshots
-                                          AWS Backup vault + plan (KMS encrypted)
-```
+*Admins and CI reach the ALB (ports 443 and 8444); data planes from other VPCs or on-premises reach the NLB (ports 8005 and 8006). The ECS Fargate service runs `kong-migrations` (init, bootstrap) and `kong-cp` (`role=control_plane`) against an Aurora Serverless v2 PostgreSQL cluster, which AWS Backup snapshots into an encrypted vault.*
 
 Three stacks per environment, deployed in dependency order:
 
